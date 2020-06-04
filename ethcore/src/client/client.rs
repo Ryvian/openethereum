@@ -2864,58 +2864,60 @@ impl PrometheusMetrics for Client {
 		// gas, tx & blocks
 		let report = self.report();
 
-		prometheus_counter(r,"import_gas","import_gas",report.gas_processed.as_u64() as i64);
-		prometheus_counter(r,"import_blocks","import_blocks",report.blocks_imported as i64);
-		prometheus_counter(r,"import_txs","import_txs",report.transactions_applied as i64);
+		prometheus_counter(r,"import_gas","Gas processed",report.gas_processed.as_u64() as i64);
+		prometheus_counter(r,"import_blocks","Blocks imported",report.blocks_imported as i64);
+		prometheus_counter(r,"import_txs","Transactions applied",report.transactions_applied as i64);
 
 		let state_db = self.state_db.read();
-		prometheus_gauge(r,"statedb_mem_used","statedb_mem_used",state_db.mem_used() as i64);
-		prometheus_gauge(r,"statedb_cache_size","statedb_cache_size",state_db.cache_size() as i64);
+		prometheus_gauge(r,"statedb_mem_used","State DB memory used",state_db.mem_used() as i64);
+		prometheus_gauge(r,"statedb_cache_size","State DB cache size",state_db.cache_size() as i64);
 
 		// blockchain caché
 		let blockchain_cache_info = self.blockchain_cache_info();
-		prometheus_gauge(r,"blockchaincache_block_details",".",blockchain_cache_info.block_details as i64);
-		prometheus_gauge(r,"blockchaincache_block_recipts",".",blockchain_cache_info.block_receipts as i64);
-		prometheus_gauge(r,"blockchaincache_blocks",".",blockchain_cache_info.blocks as i64);
-		prometheus_gauge(r,"blockchaincache_txaddrs",".",blockchain_cache_info.transaction_addresses as i64);
-		prometheus_gauge(r,"blockchaincache_size",".",blockchain_cache_info.total() as i64);
+		prometheus_gauge(r,"blockchaincache_block_details","BlockDetails cache size",blockchain_cache_info.block_details as i64);
+		prometheus_gauge(r,"blockchaincache_block_recipts","Block receipts size",blockchain_cache_info.block_receipts as i64);
+		prometheus_gauge(r,"blockchaincache_blocks","Blocks cache size",blockchain_cache_info.blocks as i64);
+		prometheus_gauge(r,"blockchaincache_txaddrs","Transaction addresses cache size",blockchain_cache_info.transaction_addresses as i64);
+		prometheus_gauge(r,"blockchaincache_size","Total blockchain cache size",blockchain_cache_info.total() as i64);
 
 		// io
 		let io_stats = self.db.read().key_value().io_stats(kvdb::IoStatsKind::Overall);
-		prometheus_counter(r,"io_transactions",".", io_stats.transactions as i64);
-		prometheus_counter(r,"io_reads",".", io_stats.reads as i64);
-		prometheus_counter(r,"io_writes",".", io_stats.writes as i64);
-		prometheus_counter(r,"io_cache_reads",".", io_stats.cache_reads as i64);
-		prometheus_counter(r,"io_bytes_read",".", io_stats.bytes_read as i64);
+		prometheus_counter(r,"io_transactions","Number of transactions", io_stats.transactions as i64);
+		prometheus_counter(r,"io_reads","Number of read operations", io_stats.reads as i64);
+		prometheus_counter(r,"io_writes","Number of write operations", io_stats.writes as i64);
+		prometheus_counter(r,"io_cache_reads","Number of reads resulted in a read from cache", io_stats.cache_reads as i64);
+		prometheus_counter(r,"io_bytes_read","Number of bytes read", io_stats.bytes_read as i64);
 		prometheus_counter(r,"io_cache_read_bytes",".", io_stats.cache_read_bytes as i64);
-		prometheus_counter(r,"io_bytes_written",".", io_stats.bytes_written as i64);
+		prometheus_counter(r,"io_bytes_written","Number of bytes written", io_stats.bytes_written as i64);
 
 		// chain info
 		let chain = self.chain_info();
+
 		let gap = chain.ancient_block_number.map(|x| U256::from(x + 1))
 			.and_then(|first| chain.first_block_number.map(|last| (first, U256::from(last))));
+		if let Some((first,last)) = gap  {
+			prometheus_gauge(r,"chain_warpsync_gap_first","Warp sync gap, first block",first.as_u64() as i64);
+			prometheus_gauge(r,"chain_warpsync_gap_last","Warp sync gap, last block",last.as_u64() as i64);
+		}
 
 		prometheus_gauge(r,"chain_difficulty_total","Blockchain difficulty",chain.total_difficulty.as_u64() as i64);
 		prometheus_gauge(r,"chain_difficulty_total_pending","Block queue difficulty",chain.pending_total_difficulty.as_u64() as i64);
 		prometheus_gauge(r,"chain_block","Best block number",chain.best_block_number as i64);
 
-		if let Some((start,end)) = gap  {
-			prometheus_gauge(r,"chain_gap_start",".",start.as_u64() as i64);
-			prometheus_gauge(r,"chain_gap_end",".",end.as_u64() as i64);
-		}
 
 		// prunning info
 		let prunning = self.pruning_info();
-		prometheus_gauge(r,"prunning_earliest_chain",".",prunning.earliest_chain as i64);
-		prometheus_gauge(r,"prunning_earliest_state",".",prunning.earliest_state as i64);
+		prometheus_gauge(r,"prunning_earliest_chain","The first block which everything can be served after",prunning.earliest_chain as i64);
+		prometheus_gauge(r,"prunning_earliest_state","The first block where state requests may be served",prunning.earliest_state as i64);
 
 		// queue info
 		let queue = self.queue_info();
-		prometheus_gauge(r,"queue_mem_used",".",queue.mem_used as i64);
-		prometheus_gauge(r,"queue_size_total",".",queue.total_queue_size() as i64);
-		prometheus_gauge(r,"queue_size_unverified",".",queue.unverified_queue_size as i64);
-		prometheus_gauge(r,"queue_size_verified",".",queue.verified_queue_size as i64);
-		prometheus_gauge(r,"queue_size_verifying",".",queue.verifying_queue_size as i64);
+		prometheus_gauge(r,"queue_mem_used","Queue heap memory used in bytes",queue.mem_used as i64);
+		prometheus_gauge(r,"queue_size_total","The total size of the queues",queue.total_queue_size() as i64);
+		prometheus_gauge(r,"queue_size_unverified","Number of queued items pending verification",queue.unverified_queue_size as i64);
+		prometheus_gauge(r,"queue_size_verified","Number of verified queued items pending import",queue.verified_queue_size as i64);
+		prometheus_gauge(r,"queue_size_verifying","Number of items being verified",queue.verifying_queue_size as i64);
+
 	}
 }
 
