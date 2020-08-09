@@ -469,9 +469,8 @@ impl Host {
 			return Ok(());
 		}
 		let local_endpoint = self.info.read().local_endpoint.clone();
-		let public_address = self.info.read().config.public_address;
 		let allow_ips = self.info.read().config.ip_filter.clone();
-		let public_endpoint = match public_address {
+		let public_endpoint = match self.info.read().config.public_address {
 			None => {
 				let public_address = select_public_address(local_endpoint.address.port());
 				let public_endpoint = NodeEndpoint { address: public_address, udp_port: local_endpoint.udp_port };
