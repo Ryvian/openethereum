@@ -315,10 +315,8 @@ impl<L: AsLightClient + Send + Sync> Handler for LightSync<L> {
 				head_num: status.head_num,
 			};
 
-			{
-				let mut best = self.best_seen.lock();
-				*best = cmp::max(best.clone(), Some(chain_info.clone()));
-			}
+			let mut best = self.best_seen.lock();
+			*best = cmp::max(best.clone(), Some(chain_info.clone()));
 
 			self.peers.write().insert(ctx.peer(), Mutex::new(Peer::new(chain_info)));
 			self.maintain_sync(ctx.as_basic());
