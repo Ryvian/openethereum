@@ -735,12 +735,11 @@ impl Host {
 		let mut ready_id = None;
 		if let Some(session) = session.clone() {
 			{
+				let mut s = session.lock();
 				loop {
-					let session_result = session.lock().readable(io, &self.info.read());
-					match session_result {
+					match s.readable(io, &self.info.read()) {
 						Err(e) => {
 							let reserved_nodes = self.reserved_nodes.read();
-							let s = session.lock();
 							trace!(target: "network", "Session read error: {}:{:?} ({:?}) {:?}", token, s.id(), s.remote_addr(), e);
 							match e {
 								Error::Disconnect(DisconnectReason::IncompatibleProtocol) | Error::Disconnect(DisconnectReason::UselessPeer) => {
@@ -760,7 +759,6 @@ impl Host {
 						Ok(SessionData::Ready) => {
 							let (_, egress_count, ingress_count) = self.session_count();
 							let reserved_nodes = self.reserved_nodes.read();
-							let mut s = session.lock();
 							let (min_peers, mut max_peers, reserved_only, self_id) = {
 								let info = self.info.read();
 								let mut max_peers = info.config.max_peers;
