@@ -324,8 +324,7 @@ impl<Message> Handler for IoManager<Message> where Message: Send + Sync + 'stati
 		let handler_index  = token.0  / TOKENS_PER_HANDLER;
 		let token_id  = token.0  % TOKENS_PER_HANDLER;
 		if let Some(handler) = self.handlers.read().get(handler_index) {
-			let maybe_timer = self.timers.read().get(&token.0).cloned();
-			if let Some(timer) = maybe_timer {
+			if let Some(timer) = self.timers.read().get(&token.0).cloned();
 				if timer.once {
 					self.timers.write().remove(&token_id);
 					event_loop.clear_timeout(&timer.timeout);
