@@ -957,15 +957,13 @@ impl miner::MinerService for Miner {
 
 	fn set_minimal_gas_price(&self, new_price: U256) -> Result<bool, &str> {
 		match *self.gas_pricer.lock() {
-			// Binding the gas pricer to `gp` here to prevent
-			// a deadlock when calling recalibrate()
-			ref mut gp @ GasPricer::Fixed(_) => {
+			GasPricer::Fixed(ref mut val) => {
 				trace!(target: "miner", "minimal_gas_price: recalibrating fixed...");
-				*gp = GasPricer::new_fixed(new_price);
+				*val = new_price;
 
 				let txq = self.transaction_queue.clone();
 				let mut options = self.options.pool_verification_options.clone();
-				gp.recalibrate(move |gas_price| {
+				self.gas_pricer.lock().recalibrate(move |gas_price| {
 					debug!(target: "miner", "minimal_gas_price: Got gas price! {}", gas_price);
 					options.minimal_gas_price = gas_price;
 					txq.set_verifier_options(options);
