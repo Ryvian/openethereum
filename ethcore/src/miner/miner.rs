@@ -880,7 +880,8 @@ impl Miner {
 	/// Prepare pending block, check whether sealing is needed, and then update sealing.
 	fn prepare_and_update_sealing<C: miner::BlockChainClient>(&self, chain: &C) {
 		match self.engine.sealing_state() {
-			SealingState::Ready => {
+            SealingState::Ready => {
+                let mut pricer = self.gas_pricer.lock();
 				self.maybe_enable_sealing();
 				self.update_sealing(chain, ForceUpdateSealing::No);
 			}
@@ -992,7 +993,8 @@ impl miner::MinerService for Miner {
 			client,
 			transactions.into_iter().map(pool::verifier::Transaction::Unverified),
 		);
-
+        //reprocduced bug here
+        let mut pricer = self.gas_pricer.lock();
 		// --------------------------------------------------------------------------
 		// | NOTE Code below requires sealing locks.                                |
 		// | Make sure to release the locks before calling that method.             |
