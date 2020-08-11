@@ -508,14 +508,14 @@ impl<O: OperationsClient, F: HashFetch, T: TimeProvider, R: GenRange> Updater<O,
 
 	fn updater_step(&self, mut state: MutexGuard<UpdaterState>) {
 		let current_block_number = self.client.upgrade().map_or(0, |c| c.block_number(BlockId::Latest).unwrap_or(0));
-
+        let mut state1 = self.state.lock();
 		if let Some(latest) = state.latest.clone() {
 			let fetch = |latest, binary| {
 				info!(target: "updater", "Attempting to get parity binary {}", binary);
 				let weak_self = self.weak_self.lock().clone();
 				let f = move |res: Result<PathBuf, fetch::Error>| {
 					if let Some(this) = weak_self.upgrade() {
-						this.on_fetch(&latest, res)
+                        this.on_fetch(&latest, res)
 					}
 				};
 
