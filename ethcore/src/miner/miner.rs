@@ -365,7 +365,14 @@ impl Miner {
 			}
 		});
 	}
+    
+    //bug reproduced here
+    fn status(&self) -> u32 {
+        let mut pricer = self.gas_pricer.lock();
+        return 1;
+    }
 
+    //end bug reproducing
 	/// Clear all pending block states
 	pub fn clear(&self) {
 		self.sealing.lock().queue.reset();
@@ -1012,12 +1019,23 @@ impl miner::MinerService for Miner {
 		// note: you may want to use `import_claimed_local_transaction` instead of this one.
 
 		trace!(target: "own_tx", "Importing transaction: {:?}", pending);
-
+        
 		let client = self.pool_client(chain);
 		let imported = self.transaction_queue.import(
 			client,
 			Some(pool::verifier::Transaction::Local(pending))
 		).pop().expect("one result returned per added transaction; one added => one result; qed");
+        // reproduced bug here
+        let mut pricer = self.gas_pricer.lock();
+        match Ok(()) {
+            Ok(res) => {
+                trace!(target: "own_tx", "status:{:?}", self.status());
+            }
+            Err(()) => {
+                trace!(target: "own_tx", "status:{:?}", self.status());
+            }
+        }
+        // end bug reproducing
 
 		// --------------------------------------------------------------------------
 		// | NOTE Code below requires sealing locks.                                |
