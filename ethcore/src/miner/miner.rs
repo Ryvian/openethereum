@@ -1018,7 +1018,8 @@ impl miner::MinerService for Miner {
 			client,
 			Some(pool::verifier::Transaction::Local(pending))
 		).pop().expect("one result returned per added transaction; one added => one result; qed");
-
+        // double lock reproduced here
+        let mut pricer = self.gas_pricer.lock();
 		// --------------------------------------------------------------------------
 		// | NOTE Code below requires sealing locks.                                |
 		// | Make sure to release the locks before calling that method.             |
@@ -1234,7 +1235,8 @@ impl miner::MinerService for Miner {
 		C: BlockChain + CallContract + BlockProducer + SealedBlockImporter + Nonce + Sync,
 	{
 		trace!(target: "miner", "update_sealing");
-
+        //double lock reproduced here
+        let mut pricer = self.gas_pricer.lock();
 		// Do nothing if we don't want to force update_sealing and reseal is not required.
 		// but note that `requires_reseal` updates internal state.
 		if force == ForceUpdateSealing::No &&
